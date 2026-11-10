@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>暗記カード</title>
+  <style>
+    :root[data-theme="light"] {
+      --bg: #f4f1ea;
+      --bg-soft: #fffdf8;
+      --surface: #ffffff;
+      --ink: #1c1914;
+      --muted: #6b6458;
+      --line: #e4ddd1;
+      --accent: #0f766e;
+      --accent-ink: #ffffff;
+      --again: #b42318;
+      --hard: #b54708;
+      --good: #0f766e;
+      --easy: #175cd3;
+      --shadow: 0 10px 30px rgba(28, 25, 20, 0.08);
+      --ok: #067647;
+      --warn-bg: #fff6e8;
+    }
+    :root[data-theme="dark"] {
+      --bg: #121417;
+      --bg-soft: #1a1d22;
+      --surface: #22262c;
+      --ink: #f3efe7;
+      --muted: #a8a195;
+      --line: #343a43;
+      --accent: #2dd4bf;
+      --accent-ink: #08332f;
+      --again: #f97066;
+      --hard: #fdb022;
+      --good: #2dd4bf;
+      --easy: #84adff;
+      --shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+      --ok: #75e0a7;
+      --warn-bg: #2a2418;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      min-height: 100dvh;
+      line-height: 1.55;
+    }
+    button, input, textarea, select { font: inherit; color: inherit; }
+    button { cursor: pointer; }
+    header.app-header {
+      position: sticky; top: 0; z-index: 20;
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 16px;
+      background: color-mix(in srgb, var(--bg) 88%, transparent);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+    }
+    .brand { font-weight: 700; letter-spacing: 0.02em; font-size: 1.05rem; }
+    .due-pill {
+      display: inline-flex; align-items: center;
+      background: var(--accent); color: var(--accent-ink);
+      border-radius: 999px; padding: 2px 9px; font-size: 0.8rem; font-weight: 700;
+    }
+    .due-pill.zero { background: var(--line); color: var(--muted); }
+    .spacer { flex: 1; }
+    .icon-btn {
+      border: 1px solid var(--line); background: var(--surface);
+      width: 40px; height: 40px; border-radius: 10px;
+    }
+    nav.tabs {
+      display: flex; gap: 6px; padding: 10px 16px 0;
+    }
+    nav.tabs button {
+      flex: 1; border: 0; background: transparent; color: var(--muted);
+      padding: 10px 8px; border-bottom: 2px solid transparent; font-weight: 600;
+    }
+    nav.tabs button.active { color: var(--ink); border-bottom-color: var(--accent); }
+    main { padding: 16px; max-width: 760px; margin: 0 auto 80px; }
+    .card-panel {
+      background: var(--surface); border: 1px solid var(--line);
+      border-radius: 18px; box-shadow: var(--shadow);
+    }
+    .review-wrap { display: grid; gap: 16px; }
+    .progress-row { display: flex; justify-content: space-between; color: var(--muted); font-size: 0.9rem; }
+    .progress-bar { height: 8px; background: var(--line); border-radius: 99px; overflow: hidden; }
+    .progress-bar > span { display: block; height: 100%; background: var(--accent); width: 0%; }
+    .flip-card {
+      min-height: 240px; padding: 28px 22px; text-align: center;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      cursor: pointer; user-select: none;
+    }
+    .flip-card .label { font-size: 0.75rem; letter-spacing: 0.12em; color: var(--muted); margin-bottom: 10px; }
+    .flip-card .content { font-size: 1.45rem; font-weight: 700; white-space: pre-wrap; word-break: break-word; }
+    .hint { color: var(--muted); font-size: 0.85rem; margin-top: 18px; }
+    .grades { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    @media (min-width: 560px) { .grades { grid-template-columns: repeat(4, 1fr); } }
+    .grade {
+      border: 0; border-radius: 14px; padding: 12px 8px; color: #fff; font-weight: 700;
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .grade small { font-weight: 500; opacity: 0.9; }
+    .grade.again { background: var(--again); }
+    .grade.hard { background: var(--hard); color: #1c1914; }
+    :root[data-theme="dark"] .grade.hard { color: #1c1914; }
+    .grade.good { background: var(--good); color: var(--accent-ink); }
+    .grade.easy { background: var(--easy); }
+    .empty {
+      padding: 28px 22px; color: var(--muted);
+    }
+    .empty h2 { color: var(--ink); margin: 0 0 8px; font-size: 1.15rem; }
+    .empty ol { padding-left: 1.2em; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .toolbar input[type="search"] {
+      flex: 1; min-width: 160px; border: 1px solid var(--line); background: var(--surface);
+      border-radius: 12px; padding: 10px 12px;
+    }
+    .btn {
+      border: 1px solid var(--line); background: var(--surface);
+      border-radius: 12px; padding: 10px 14px; font-weight: 600;
+    }
+    .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+    .btn.danger { color: var(--again); }
+    .list { display: grid; gap: 8px; }
+    .item {
+      background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+      padding: 12px 14px; display: grid; gap: 6px;
+    }
+    .item .front { font-weight: 700; }
+    .item .back { color: var(--muted); white-space: pre-wrap; }
+    .item .meta { font-size: 0.8rem; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+    .item .actions { display: flex; gap: 6px; }
+    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    @media (min-width: 560px) { .stats { grid-template-columns: repeat(4, 1fr); } }
+    .stat { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
+    .stat .num { font-size: 1.7rem; font-weight: 800; }
+    .stat .lbl { color: var(--muted); font-size: 0.85rem; }
+    .section { margin-top: 18px; }
+    .muted { color: var(--muted); }
+    .next-due { background: var(--bg-soft); border: 1px dashed var(--line); border-radius: 14px; padding: 12px 14px; }
+    dialog { border: 0; border-radius: 18px; padding: 0; background: var(--surface); color: var(--ink); width: min(92vw, 520px); box-shadow: var(--shadow); }
+    dialog::backdrop { background: rgba(0,0,0,.45); }
+    .dialog-body { padding: 18px; display: grid; gap: 10px; }
+    .dialog-body h2 { margin: 0; font-size: 1.1rem; }
+    label { font-size: 0.85rem; font-weight: 600; }
+    input[type="text"], textarea {
+      width: 100%; border: 1px solid var(--line); background: var(--bg);
+      border-radius: 12px; padding: 10px 12px;
+    }
+    textarea { min-height: 120px; resize: vertical; }
+    .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+    .toast {
+      position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%);
+      background: var(--ink); color: var(--bg); padding: 10px 14px; border-radius: 999px;
+      font-size: 0.9rem; opacity: 0; pointer-events: none; transition: opacity .2s;
+      z-index: 50; max-width: 90vw;
+    }
+    .toast.show { opacity: 1; }
+    .hidden { display: none !important; }
+    .storage-banner {
+      background: #8a1c12; color: #fff; padding: 10px 16px;
+      font-size: 0.92rem; line-height: 1.45;
+      display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+    }
+    :root[data-theme="dark"] .storage-banner { background: #b42318; }
+    .storage-banner button { border: 1px solid #fff; background: transparent; color: #fff; border-radius: 10px; padding: 6px 10px; font-weight: 700; }
+    .form-error { color: var(--again); font-size: 0.9rem; font-weight: 600; min-height: 1.2em; }
+    .status-ok { color: var(--ok); font-weight: 700; }
+    #modalBackdrop {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 35;
+    }
+    #modalBackdrop.show { display: block; }
+    dialog.modal-fallback {
+      display: block; position: fixed; left: 50%; top: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 40; margin: 0; max-height: 90vh; overflow: auto;
+    }
+    header.app-header .header-add { width: auto; padding: 0 12px; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">暗記カード</div>
+    <span id="duePill" class="due-pill zero">0</span>
+    <div class="spacer"></div>
+    <button class="icon-btn header-add" id="headerAddBtn" type="button">追加</button>
+    <button class="icon-btn" id="themeBtn" type="button" aria-label="テーマ切り替え">🌓</button>
+  </header>
+  <div id="storageBanner" class="storage-banner hidden" role="alert">
+    <span>この開き方では保存できません。ファイルをダウンロードしてChromeやSafariで開いてください</span>
+    <button type="button" id="downloadAppBtn">ファイルをダウンロード</button>
+  </div>
+  <div id="modalBackdrop"></div>
+
+  <nav class="tabs" aria-label="画面切り替え">
+    <button type="button" data-view="review" class="active">今日の復習</button>
+    <button type="button" data-view="list">カード一覧</button>
+    <button type="button" data-view="stats">統計</button>
+  </nav>
+
+  <main>
+    <section id="view-review" class="review-wrap">
+      <div class="next-due" id="nextDueBox"></div>
+      <div class="progress-row">
+        <span id="reviewRemain">残り 0 枚</span>
+        <span id="reviewProgressLabel">今日の進捗 0 / 0</span>
+      </div>
+      <div class="progress-bar" aria-hidden="true"><span id="reviewBar"></span></div>
+      <div id="reviewPanel" class="card-panel"></div>
+      <div id="gradeBox" class="grades hidden"></div>
+    </section>
+
+    <section id="view-list" class="hidden">
+      <div class="toolbar">
+        <input type="search" id="searchInput" placeholder="表または裏で検索" autocomplete="off">
+        <button class="btn primary" type="button" id="addBtn">追加</button>
+        <button class="btn" type="button" id="bulkBtn">まとめて追加</button>
+        <button class="btn" type="button" id="exportBtn">書き出し</button>
+        <button class="btn" type="button" id="importBtn">読み込み</button>
+        <input type="file" id="importFile" accept="application/json,.json" class="hidden">
+      </div>
+      <div id="listEmpty" class="card-panel empty hidden"></div>
+      <div id="cardList" class="list"></div>
+    </section>
+
+    <section id="view-stats" class="hidden">
+      <div class="stats">
+        <div class="stat"><div class="num" id="statTotal">0</div><div class="lbl">総カード数</div></div>
+        <div class="stat"><div class="num" id="statDue">0</div><div class="lbl">今日の期限</div></div>
+        <div class="stat"><div class="num" id="statWeek">0</div><div class="lbl">明日以降7日間</div></div>
+        <div class="stat"><div class="num" id="statMastered">0</div><div class="lbl">習得済み</div></div>
+      </div>
+      <div class="section next-due" id="statsNextDue"></div>
+      <div class="section card-panel" style="padding:16px">
+        <h2 style="margin:0 0 8px;font-size:1rem">リマインド通知</h2>
+        <p class="muted" id="notifyStatus">このページを開いているときに、期限が来たカードを通知します。</p>
+        <button class="btn primary" type="button" id="notifyBtn">通知を許可</button>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="editDialog">
+    <div class="dialog-body" id="editForm">
+      <h2 id="editTitle">カードを追加</h2>
+      <label for="frontInput">覚えたいこと（表）</label>
+      <textarea id="frontInput" placeholder="例：photosynthesis"></textarea>
+      <label for="backInput">意味（裏）</label>
+      <textarea id="backInput" placeholder="例：光合成"></textarea>
+      <div class="form-error" id="editError" role="alert"></div>
+      <div class="dialog-actions">
+        <button class="btn" type="button" id="editCancel">やめる</button>
+        <button class="btn primary" type="button" id="saveBtn">保存</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="bulkDialog">
+    <div class="dialog-body" id="bulkForm">
+      <h2>まとめて追加</h2>
+      <p class="muted">1行に「単語,意味」またはタブ区切りで貼り付けてください。意味の中にカンマがある場合は、最初のカンマ（またはタブ）で表と裏を分けます。</p>
+      <textarea id="bulkInput" placeholder="apple,りんご&#10;photosynthesis&#9;光合成"></textarea>
+      <div class="form-error" id="bulkError" role="alert"></div>
+      <div class="dialog-actions">
+        <button class="btn" type="button" id="bulkCancel">やめる</button>
+        <button class="btn primary" type="button" id="bulkSaveBtn">登録</button>
+      </div>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status"></div>
+
+  <script>
+/* ===== SM-2 inspired scheduler (also extracted by tests) ===== */
+const FlashScheduler = (function () {
+  const MIN = 60 * 1000;
+  const HOUR = 60 * MIN;
+  const DAY = 24 * HOUR;
+  const SEQUENCE = [1, 3, 7, 14, 30];
+  const MASTERED_INTERVAL = 30;
+  const AGAIN_MS = 10 * MIN;
+  const FIRST_HARD_MS = 30 * MIN;
+  const FIRST_GOOD_MS = 4 * HOUR;
+
+  function endOfLocalDay(now) {
+    const d = new Date(now);
+    d.setHours(23, 59, 59, 999);
+    return d.getTime();
+  }
+
+  function laterToday(now, delayMs) {
+    const cap = endOfLocalDay(now);
+    let due = now + delayMs;
+    if (due > cap) {
+      due = Math.max(now + AGAIN_MS, Math.min(due, cap));
+    }
+    return due;
+  }
+
+  function nextInSequence(currentDays) {
+    for (const step of SEQUENCE) {
+      if (step > currentDays) return step;
+    }
+    return null;
+  }
+
+  function updateEf(ef, q) {
+    const next = ef + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02));
+    return Math.max(1.3, Math.round(next * 100) / 100);
+  }
+
+  function apply(card, grade, now) {
+    now = now == null ? Date.now() : now;
+    const next = Object.assign({}, card);
+    let ef = next.ef == null ? 2.5 : next.ef;
+    let reps = next.reps == null ? 0 : next.reps;
+    let interval = next.interval == null ? 0 : next.interval;
+    let due;
+
+    if (grade === "again") {
+      next.ef = Math.max(1.3, Math.round((ef - 0.2) * 100) / 100);
+      next.reps = 0;
+      next.interval = 0;
+      next.due = laterToday(now, AGAIN_MS);
+      next.lastReviewed = now;
+      next.lapses = (next.lapses || 0) + 1;
+      return next;
+    }
+
+    const q = grade === "hard" ? 3 : grade === "good" ? 4 : 5;
+    ef = updateEf(ef, q);
+
+    if (grade === "hard") {
+      if (reps === 0) {
+        interval = 0;
+        reps = 1;
+        due = laterToday(now, FIRST_HARD_MS);
+      } else if (interval === 0) {
+        interval = 1;
+        reps += 1;
+        due = now + interval * DAY;
+      } else {
+        interval = Math.max(1, Math.round(interval * 1.2));
+        reps += 1;
+        due = now + interval * DAY;
+      }
+    } else if (grade === "good") {
+      if (reps === 0) {
+        interval = 0;
+        reps = 1;
+        due = laterToday(now, FIRST_GOOD_MS);
+      } else if (interval === 0 || reps === 1) {
+        interval = 1;
+        reps += 1;
+        due = now + interval * DAY;
+      } else {
+        const stepped = nextInSequence(interval);
+        if (stepped != null) interval = stepped;
+        else interval = Math.max(SEQUENCE[SEQUENCE.length - 1] + 1, Math.round(interval * ef));
+        reps += 1;
+        due = now + interval * DAY;
+      }
+    } else { // easy
+      if (reps === 0) {
+        interval = 1;
+        reps = 2;
+        due = now + interval * DAY;
+      } else if (interval === 0 || reps === 1) {
+        interval = 3;
+        reps += 1;
+        due = now + interval * DAY;
+      } else {
+        const first = nextInSequence(interval);
+        const second = first == null ? null : nextInSequence(first);
+        if (second != null) interval = second;
+        else interval = Math.max(SEQUENCE[SEQUENCE.length - 1] + 1, Math.round(interval * ef * 1.3));
+        reps += 1;
+        due = now + interval * DAY;
+      }
+    }
+
+    next.ef = ef;
+    next.reps = reps;
+    next.interval = interval;
+    next.due = due;
+    next.lastReviewed = now;
+    return next;
+  }
+
+  function formatInterval(from, to) {
+    const ms = Math.max(0, to - from);
+    const minutes = Math.round(ms / MIN);
+    if (minutes < 60) return minutes + "分後";
+    const hours = Math.round(ms / HOUR);
+    if (hours < 24) {
+      const fromDay = new Date(from).toDateString();
+      const toDay = new Date(to).toDateString();
+      if (fromDay === toDay) return hours + "時間後（当日中）";
+      return hours + "時間後";
+    }
+    const days = Math.round(ms / DAY);
+    return days + "日後";
+  }
+
+  function isMastered(card) {
+    return (card.interval || 0) >= MASTERED_INTERVAL;
+  }
+
+  return {
+    apply: apply,
+    preview: apply,
+    formatInterval: formatInterval,
+    laterToday: laterToday,
+    isMastered: isMastered,
+    SEQUENCE: SEQUENCE.slice(),
+    AGAIN_MS: AGAIN_MS,
+    FIRST_HARD_MS: FIRST_HARD_MS,
+    FIRST_GOOD_MS: FIRST_GOOD_MS,
+    DAY: DAY,
+    MASTERED_INTERVAL: MASTERED_INTERVAL
+  };
+})();
+  </script>
+
+  <script>
+(function () {
+  const STORAGE_KEY = "deruma-flashcards-v1";
+  const THEME_KEY = "deruma-flashcards-theme";
+  const NOTIFY_KEY = "deruma-flashcards-last-notify";
+  const BASE_TITLE = "暗記カード";
+  const HELP_HTML = "<h2>使い方</h2><ol><li>右上の「追加」から、覚えたいこと（表）とその意味（裏）を登録します。まとめて追加なら一覧の「まとめて追加」に「単語,意味」を1行ずつ貼り付けられます。</li><li>「今日の復習」で期限が来たカードの表を見て思い出し、タップして裏を確認します。</li><li>「もう一度／難しい／普通／簡単」で自己評価すると、忘却曲線に沿って次の復習日が決まります。初回は当日中に再出題され、その後は1日→3日→7日→14日→30日…と伸びていきます。間違えたらやり直しです。</li><li>データはこのブラウザに保存されます。書き出しでJSONバックアップを取れます。</li></ol><p><button type=\"button\" class=\"btn primary js-open-add\">カードを追加</button></p>";
+
+  const $ = function (id) { return document.getElementById(id); };
+  const state = {
+    cards: [],
+    view: "review",
+    queue: [],
+    current: null,
+    showingBack: false,
+    reviewedToday: 0,
+    dueAtStart: 0,
+    editId: null,
+    search: ""
+  };
+
+  function uid() {
+    return "c_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (ch) {
+      return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch];
+    });
+  }
+
+  const memoryStore = {};
+  let persistentStorage = false;
+
+  function updateStorageBanner() {
+    const el = $("storageBanner");
+    if (!el) return;
+    el.classList.toggle("hidden", persistentStorage);
+  }
+
+  function probeStorage() {
+    try {
+      const k = STORAGE_KEY + "__probe";
+      localStorage.setItem(k, "1");
+      const ok = localStorage.getItem(k) === "1";
+      localStorage.removeItem(k);
+      persistentStorage = !!ok;
+    } catch (e) {
+      persistentStorage = false;
+    }
+    updateStorageBanner();
+  }
+
+  function storageGet(key) {
+    try {
+      if (persistentStorage) {
+        const v = localStorage.getItem(key);
+        if (v != null) memoryStore[key] = v;
+        return v;
+      }
+    } catch (e) {
+      persistentStorage = false;
+      updateStorageBanner();
+    }
+    return Object.prototype.hasOwnProperty.call(memoryStore, key) ? memoryStore[key] : null;
+  }
+
+  function storageSet(key, value) {
+    memoryStore[key] = value;
+    try {
+      localStorage.setItem(key, value);
+    } catch (e) {
+      persistentStorage = false;
+      updateStorageBanner();
+    }
+  }
+
+  function load() {
+    try {
+      const raw = storageGet(STORAGE_KEY);
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      state.cards = Array.isArray(data) ? data : (data.cards || []);
+    } catch (e) {
+      state.cards = state.cards || [];
+    }
+  }
+
+  function save() {
+    const payload = { version: 1, savedAt: new Date().toISOString(), cards: state.cards };
+    storageSet(STORAGE_KEY, JSON.stringify(payload));
+  }
+
+  function isModalOpen(el) {
+    return !!(el && (el.open || el.classList.contains("modal-fallback") || el.hasAttribute("open")));
+  }
+
+  function anyModalOpen() {
+    return isModalOpen($("editDialog")) || isModalOpen($("bulkDialog"));
+  }
+
+  function openModal(el) {
+    closeModal($("editDialog") === el ? $("bulkDialog") : $("editDialog"));
+    var usedNative = false;
+    try {
+      if (el && typeof el.showModal === "function") {
+        if (!el.open) el.showModal();
+        usedNative = true;
+      }
+    } catch (e) {
+      usedNative = false;
+    }
+    if (!usedNative) {
+      el.setAttribute("open", "");
+      el.classList.add("modal-fallback");
+    }
+    var backdrop = $("modalBackdrop");
+    if (backdrop) backdrop.classList.add("show");
+  }
+
+  function closeModal(el) {
+    if (!el) return;
+    try {
+      if (typeof el.close === "function" && el.open) el.close();
+    } catch (e) {}
+    el.removeAttribute("open");
+    el.classList.remove("modal-fallback");
+    if (!anyModalOpen()) {
+      var backdrop = $("modalBackdrop");
+      if (backdrop) backdrop.classList.remove("show");
+    }
+  }
+
+  function setFormError(id, msg) {
+    var el = $(id);
+    if (!el) return;
+    el.textContent = msg || "";
+    el.classList.toggle("status-ok", !!msg && msg.indexOf("ました") !== -1);
+  }
+
+  function toast(msg) {
+    const el = $("toast");
+    el.textContent = msg;
+    el.classList.add("show");
+    clearTimeout(toast._t);
+    toast._t = setTimeout(function () { el.classList.remove("show"); }, 2400);
+  }
+
+  function startOfDay(ts) {
+    const d = new Date(ts);
+    d.setHours(0, 0, 0, 0);
+    return d.getTime();
+  }
+
+  function endOfDay(ts) {
+    const d = new Date(ts);
+    d.setHours(23, 59, 59, 999);
+    return d.getTime();
+  }
+
+  function dueToday(now) {
+    now = now || Date.now();
+    const end = endOfDay(now);
+    return state.cards.filter(function (c) { return c.due <= end; });
+  }
+
+  function dueNow(now) {
+    now = now || Date.now();
+    return state.cards.filter(function (c) { return c.due <= now; }).sort(function (a, b) { return a.due - b.due; });
+  }
+
+  function dueCountNow() { return dueNow().length; }
+
+  function countReviewedToday(now) {
+    now = now || Date.now();
+    const start = startOfDay(now);
+    return state.cards.filter(function (c) { return c.lastReviewed && c.lastReviewed >= start; }).length;
+  }
+
+  function nextScheduled(now) {
+    now = now || Date.now();
+    if (!state.cards.length) return null;
+    var soonest = null;
+    state.cards.forEach(function (c) {
+      if (soonest == null || c.due < soonest.due) soonest = c;
+    });
+    return soonest;
+  }
+
+  function formatDateTime(ts) {
+    const d = new Date(ts);
+    const w = "日月火水木金土"[d.getDay()];
+    const pad = function (n) { return String(n).padStart(2, "0"); };
+    return d.getFullYear() + "年" + (d.getMonth() + 1) + "月" + d.getDate() + "日（" + w + "） " + pad(d.getHours()) + ":" + pad(d.getMinutes());
+  }
+
+  function applyTheme(theme) {
+    document.documentElement.setAttribute("data-theme", theme);
+    storageSet(THEME_KEY, theme);
+  }
+
+  function initTheme() {
+    var saved = null;
+    try { saved = storageGet(THEME_KEY); } catch (e) { saved = null; }
+    var prefersDark = false;
+    try { prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches; } catch (e) {}
+    if (saved === "light" || saved === "dark") applyTheme(saved);
+    else applyTheme(prefersDark ? "dark" : "light");
+  }
+
+  function updateTitle() {
+    const n = dueCountNow();
+    document.title = n > 0 ? "(" + n + ") " + BASE_TITLE : BASE_TITLE;
+    const pill = $("duePill");
+    pill.textContent = String(n);
+    pill.classList.toggle("zero", n === 0);
+  }
+
+  function renderNextDue() {
+    const now = Date.now();
+    const nxt = nextScheduled(now);
+    let html;
+    if (!state.cards.length) {
+      html = "カードはまだありません。右上の「追加」から登録してください。";
+    } else if (dueCountNow() > 0) {
+      html = "今すぐ復習できるカードがあります（期限到来：<strong>" + dueCountNow() + "</strong>枚）。";
+    } else {
+      html = "次回の復習予定：<strong>" + formatDateTime(nxt.due) + "</strong>";
+    }
+    $("nextDueBox").innerHTML = html;
+    $("statsNextDue").innerHTML = html;
+  }
+
+  function setView(name) {
+    state.view = name;
+    ["review", "list", "stats"].forEach(function (v) {
+      $("view-" + v).classList.toggle("hidden", v !== name);
+    });
+    document.querySelectorAll("nav.tabs button").forEach(function (b) {
+      b.classList.toggle("active", b.getAttribute("data-view") === name);
+    });
+    if (name === "review") startReviewSession(false);
+    if (name === "list") renderList();
+    if (name === "stats") renderStats();
+  }
+
+  function newCard(front, back) {
+    const now = Date.now();
+    return {
+      id: uid(),
+      front: front,
+      back: back,
+      createdAt: now,
+      ef: 2.5,
+      reps: 0,
+      interval: 0,
+      due: now,
+      lastReviewed: null,
+      lapses: 0
+    };
+  }
+
+  function startReviewSession(forceReset) {
+    const now = Date.now();
+    const due = dueNow(now);
+    if (forceReset || !state.current) {
+      state.queue = due.map(function (c) { return c.id; });
+      state.current = state.queue.shift() || null;
+      state.showingBack = false;
+      state.dueAtStart = due.length;
+    } else if (state.current && !state.cards.some(function (c) { return c.id === state.current; })) {
+      state.current = state.queue.shift() || null;
+      state.showingBack = false;
+    }
+    state.reviewedToday = countReviewedToday(now);
+    renderReview();
+    renderNextDue();
+    updateTitle();
+  }
+
+  function currentCard() {
+    return state.cards.find(function (c) { return c.id === state.current; }) || null;
+  }
+
+  function renderReview() {
+    const panel = $("reviewPanel");
+    const grades = $("gradeBox");
+    const remain = (state.current ? 1 : 0) + state.queue.length;
+    const done = state.reviewedToday;
+    const totalToday = Math.max(state.dueAtStart, done + remain);
+    $("reviewRemain").textContent = "残り " + remain + " 枚";
+    $("reviewProgressLabel").textContent = "今日の進捗 " + done + " / " + totalToday;
+    $("reviewBar").style.width = (totalToday ? Math.round(done / totalToday * 100) : 0) + "%";
+
+    if (!state.cards.length) {
+      panel.innerHTML = '<div class="empty">' + HELP_HTML + "</div>";
+      grades.classList.add("hidden");
+      bindOpenAdd(panel);
+      return;
+    }
+    const card = currentCard();
+    if (!card) {
+      panel.innerHTML = '<div class="empty"><h2>今日の復習は以上です</h2><p>期限が来たカードはありません。次の予定は上の欄を見てください。新しいカードを追加すると、すぐに今日の復習に入ります。</p></div>';
+      grades.classList.add("hidden");
+      return;
+    }
+    const side = state.showingBack ? "裏・意味" : "表・覚えたいこと";
+    const text = state.showingBack ? card.back : card.front;
+    const hint = state.showingBack ? "評価ボタンで次の間隔を選んでください" : "タップして裏を表示";
+    panel.innerHTML = '<div class="flip-card" id="flipCard" role="button" tabindex="0"><div class="label">' + side + "</div><div class=\"content\">" + escapeHtml(text) + '</div><div class="hint">' + hint + "</div></div>";
+    $("flipCard").addEventListener("click", revealBack);
+    $("flipCard").addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); revealBack(); }
+    });
+    if (state.showingBack) {
+      const now = Date.now();
+      const buttons = [
+        ["again", "もう一度"],
+        ["hard", "難しい"],
+        ["good", "普通"],
+        ["easy", "簡単"]
+      ];
+      grades.innerHTML = buttons.map(function (pair) {
+        const next = FlashScheduler.preview(card, pair[0], now);
+        const label = FlashScheduler.formatInterval(now, next.due);
+        return '<button type="button" class="grade ' + pair[0] + '" data-grade="' + pair[0] + '">' + pair[1] + "<small>" + label + "</small></button>";
+      }).join("");
+      grades.classList.remove("hidden");
+      grades.querySelectorAll("button").forEach(function (b) {
+        b.addEventListener("click", function () { rate(b.getAttribute("data-grade")); });
+      });
+    } else {
+      grades.classList.add("hidden");
+      grades.innerHTML = "";
+    }
+  }
+
+  function revealBack() {
+    if (!state.current) return;
+    state.showingBack = true;
+    renderReview();
+  }
+
+  function rate(grade) {
+    const card = currentCard();
+    if (!card) return;
+    const now = Date.now();
+    const updated = FlashScheduler.apply(card, grade, now);
+    const idx = state.cards.findIndex(function (c) { return c.id === card.id; });
+    state.cards[idx] = updated;
+    save();
+    if (updated.due <= now + 15 * 60 * 1000) {
+      state.queue.push(updated.id);
+    }
+    state.current = state.queue.shift() || null;
+    state.showingBack = false;
+    state.reviewedToday = countReviewedToday(now);
+    renderReview();
+    renderNextDue();
+    updateTitle();
+    maybeNotify(true);
+  }
+
+  function renderList() {
+    const q = state.search.trim().toLowerCase();
+    const rows = state.cards.filter(function (c) {
+      if (!q) return true;
+      return c.front.toLowerCase().indexOf(q) !== -1 || c.back.toLowerCase().indexOf(q) !== -1;
+    }).sort(function (a, b) { return a.due - b.due; });
+
+    const empty = $("listEmpty");
+    const list = $("cardList");
+    if (!state.cards.length) {
+      empty.innerHTML = HELP_HTML;
+      empty.classList.remove("hidden");
+      list.innerHTML = "";
+      bindOpenAdd(empty);
+      return;
+    }
+    empty.classList.add("hidden");
+    if (!rows.length) {
+      list.innerHTML = '<div class="muted">一致するカードはありません。</div>';
+      return;
+    }
+    const now = Date.now();
+    list.innerHTML = rows.map(function (c) {
+      const status = c.due <= now ? "期限到来" : "次回 " + formatDateTime(c.due);
+      const mastered = FlashScheduler.isMastered(c) ? " · 習得済み" : "";
+      return '<article class="item" data-id="' + c.id + '"><div class="front">' + escapeHtml(c.front) + '</div><div class="back">' + escapeHtml(c.back) + '</div><div class="meta"><span>' + status + mastered + '</span><span class="actions"><button class="btn" type="button" data-act="edit">編集</button><button class="btn danger" type="button" data-act="del">削除</button></span></div></article>';
+    }).join("");
+    list.querySelectorAll(".item").forEach(function (el) {
+      el.querySelector('[data-act="edit"]').addEventListener("click", function () { openEdit(el.getAttribute("data-id")); });
+      el.querySelector('[data-act="del"]').addEventListener("click", function () { removeCard(el.getAttribute("data-id")); });
+    });
+  }
+
+  function renderStats() {
+    const now = Date.now();
+    const todayEnd = endOfDay(now);
+    const weekEnd = todayEnd + 7 * FlashScheduler.DAY;
+    const dueTodayCount = state.cards.filter(function (c) { return c.due <= todayEnd; }).length;
+    const weekCount = state.cards.filter(function (c) { return c.due > todayEnd && c.due <= weekEnd; }).length;
+    const mastered = state.cards.filter(FlashScheduler.isMastered).length;
+    $("statTotal").textContent = String(state.cards.length);
+    $("statDue").textContent = String(dueTodayCount);
+    $("statWeek").textContent = String(weekCount);
+    $("statMastered").textContent = String(mastered);
+    renderNextDue();
+    updateNotifyStatus();
+  }
+
+  function bindOpenAdd(root) {
+    if (!root) return;
+    root.querySelectorAll(".js-open-add").forEach(function (b) {
+      b.addEventListener("click", function () { openEdit(null); });
+    });
+  }
+
+  function emptyReason(front, back) {
+    if (!front && !back) return "表と裏が空です。覚えたいことと意味を入力してください。";
+    if (!front) return "表（覚えたいこと）が空です。入力してください。";
+    if (!back) return "裏（意味）が空です。入力してください。";
+    return "";
+  }
+
+  function openEdit(id) {
+    state.editId = id || null;
+    $("editTitle").textContent = id ? "カードを編集" : "カードを追加";
+    const card = id ? state.cards.find(function (c) { return c.id === id; }) : null;
+    $("frontInput").value = card ? card.front : "";
+    $("backInput").value = card ? card.back : "";
+    setFormError("editError", "");
+    openModal($("editDialog"));
+    try { $("frontInput").focus(); } catch (e) {}
+  }
+
+  function submitEdit() {
+    const front = $("frontInput").value.trim();
+    const back = $("backInput").value.trim();
+    const reason = emptyReason(front, back);
+    if (reason) {
+      setFormError("editError", reason);
+      toast(reason);
+      return false;
+    }
+    if (state.editId) {
+      const card = state.cards.find(function (c) { return c.id === state.editId; });
+      if (card) { card.front = front; card.back = back; }
+      setFormError("editError", "更新しました");
+      toast("更新しました");
+    } else {
+      state.cards.push(newCard(front, back));
+      setFormError("editError", "追加しました");
+      toast("追加しました");
+    }
+    save();
+    closeModal($("editDialog"));
+    renderList();
+    if (state.view === "stats") renderStats();
+    startReviewSession(true);
+    updateTitle();
+    return true;
+  }
+
+  function submitBulk() {
+    const items = parseBulk($("bulkInput").value);
+    if (!items.length) {
+      const raw = $("bulkInput").value.trim();
+      const msg = raw ? "登録できる行がありません。1行を「単語,意味」またはタブ区切りにしてください。" : "入力が空です。1行に「単語,意味」を書いてください。";
+      setFormError("bulkError", msg);
+      toast(msg);
+      return false;
+    }
+    items.forEach(function (it) { state.cards.push(newCard(it.front, it.back)); });
+    save();
+    setFormError("bulkError", items.length + "枚を追加しました");
+    closeModal($("bulkDialog"));
+    renderList();
+    if (state.view === "stats") renderStats();
+    startReviewSession(true);
+    updateTitle();
+    toast(items.length + "枚を追加しました");
+    return true;
+  }
+
+  function removeCard(id) {
+    const card = state.cards.find(function (c) { return c.id === id; });
+    if (!card) return;
+    var ok = false;
+    try { ok = confirm("「" + card.front + "」を削除しますか？"); }
+    catch (e) { ok = true; }
+    if (!ok) return;
+    state.cards = state.cards.filter(function (c) { return c.id !== id; });
+    save();
+    if (state.current === id) {
+      state.current = state.queue.shift() || null;
+      state.showingBack = false;
+    }
+    state.queue = state.queue.filter(function (qid) { return qid !== id; });
+    renderList();
+    updateTitle();
+    renderNextDue();
+    toast("削除しました");
+  }
+
+  function parseBulk(text) {
+    const lines = text.split(/\r?\n/);
+    const items = [];
+    lines.forEach(function (line) {
+      const raw = line.trim();
+      if (!raw) return;
+      let front, back;
+      const tab = raw.indexOf("\t");
+      if (tab !== -1) {
+        front = raw.slice(0, tab).trim();
+        back = raw.slice(tab + 1).trim();
+      } else {
+        const comma = raw.indexOf(",");
+        if (comma === -1) return;
+        front = raw.slice(0, comma).trim();
+        back = raw.slice(comma + 1).trim();
+      }
+      if (front && back) items.push({ front: front, back: back });
+    });
+    return items;
+  }
+
+  function exportJson() {
+    const payload = {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      cards: state.cards
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "anki-backup-" + new Date().toISOString().slice(0, 10) + ".json";
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast("JSONを書き出しました");
+  }
+
+  function importJsonText(text) {
+    let data;
+    try { data = JSON.parse(text); }
+    catch (e) { throw new Error("JSONの形式が正しくありません"); }
+    const incoming = Array.isArray(data) ? data : (data.cards || null);
+    if (!Array.isArray(incoming)) throw new Error("cards 配列が見つかりません");
+    const byId = {};
+    state.cards.forEach(function (c) { byId[c.id] = c; });
+    let added = 0, updated = 0;
+    incoming.forEach(function (c) {
+      if (!c || !c.front || !c.back) return;
+      const card = {
+        id: c.id || uid(),
+        front: String(c.front),
+        back: String(c.back),
+        createdAt: c.createdAt || Date.now(),
+        ef: typeof c.ef === "number" ? c.ef : 2.5,
+        reps: typeof c.reps === "number" ? c.reps : 0,
+        interval: typeof c.interval === "number" ? c.interval : 0,
+        due: typeof c.due === "number" ? c.due : Date.now(),
+        lastReviewed: c.lastReviewed || null,
+        lapses: c.lapses || 0
+      };
+      if (byId[card.id]) { byId[card.id] = card; updated += 1; }
+      else { byId[card.id] = card; added += 1; }
+    });
+    state.cards = Object.keys(byId).map(function (k) { return byId[k]; });
+    save();
+    return { added: added, updated: updated };
+  }
+
+  function notificationPermission() {
+    try {
+      if (typeof Notification === "undefined") return "unsupported";
+      return Notification.permission || "unsupported";
+    } catch (e) {
+      return "unsupported";
+    }
+  }
+
+  function updateNotifyStatus() {
+    try {
+      const p = notificationPermission();
+      if (p === "unsupported") {
+        $("notifyStatus").textContent = "このブラウザは通知に対応していません。タブのタイトルには期限数が表示されます。";
+        $("notifyBtn").classList.add("hidden");
+        return;
+      }
+      if (p === "granted") {
+        $("notifyStatus").textContent = "通知は許可済みです。このページを開いているときに、期限カードがあれば知らせます。";
+        $("notifyBtn").textContent = "通知をテスト";
+        $("notifyBtn").classList.remove("hidden");
+      } else if (p === "denied") {
+        $("notifyStatus").textContent = "通知はブロックされています。ブラウザの設定から許可するか、タブタイトルの期限数をご利用ください。";
+        $("notifyBtn").classList.add("hidden");
+      } else {
+        $("notifyStatus").textContent = "このページを開いているときに、期限が来たカードを通知できます。";
+        $("notifyBtn").textContent = "通知を許可";
+        $("notifyBtn").classList.remove("hidden");
+      }
+    } catch (e) {
+      try {
+        $("notifyStatus").textContent = "この環境では通知を使えません。タブのタイトルには期限数が表示されます。";
+        $("notifyBtn").classList.add("hidden");
+      } catch (e2) {}
+    }
+  }
+
+  function sessionGet(key) {
+    try { return sessionStorage.getItem(key); } catch (e) { return memoryStore["sess:" + key] || null; }
+  }
+  function sessionSet(key, value) {
+    memoryStore["sess:" + key] = value;
+    try { sessionStorage.setItem(key, value); } catch (e) {}
+  }
+
+  function maybeNotify(fromUser) {
+    try {
+      updateTitle();
+      if (notificationPermission() !== "granted") return;
+      const n = dueCountNow();
+      if (n <= 0) return;
+      const last = Number(sessionGet(NOTIFY_KEY) || 0);
+      const now = Date.now();
+      if (!fromUser && now - last < 10 * 60 * 1000) return;
+      sessionSet(NOTIFY_KEY, String(now));
+      try {
+        new Notification("暗記カード", { body: "今日の復習が " + n + " 枚たまっています。", tag: "deruma-flashcards-due", silent: false });
+      } catch (e) {}
+    } catch (e) {}
+  }
+
+  function bind() {
+    document.querySelectorAll("nav.tabs button").forEach(function (b) {
+      b.addEventListener("click", function () { setView(b.getAttribute("data-view")); });
+    });
+    $("themeBtn").addEventListener("click", function () {
+      const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+      applyTheme(next);
+    });
+    function openAdd() { openEdit(null); }
+    $("addBtn").addEventListener("click", openAdd);
+    $("headerAddBtn").addEventListener("click", openAdd);
+    $("editCancel").addEventListener("click", function () { closeModal($("editDialog")); });
+    $("saveBtn").addEventListener("click", function () { submitEdit(); });
+    $("editForm").addEventListener("keydown", function (e) {
+      if (e.isComposing || e.keyCode === 229) return;
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        submitEdit();
+      }
+    });
+    $("bulkBtn").addEventListener("click", function () {
+      $("bulkInput").value = "";
+      setFormError("bulkError", "");
+      openModal($("bulkDialog"));
+      try { $("bulkInput").focus(); } catch (e) {}
+    });
+    $("bulkCancel").addEventListener("click", function () { closeModal($("bulkDialog")); });
+    $("bulkSaveBtn").addEventListener("click", function () { submitBulk(); });
+    $("bulkForm").addEventListener("keydown", function (e) {
+      if (e.isComposing || e.keyCode === 229) return;
+      if ((e.key === "Enter" && (e.ctrlKey || e.metaKey))) {
+        e.preventDefault();
+        submitBulk();
+      }
+    });
+    $("modalBackdrop").addEventListener("click", function () {
+      closeModal($("editDialog"));
+      closeModal($("bulkDialog"));
+    });
+    $("downloadAppBtn").addEventListener("click", function () {
+      try {
+        var html = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+        var blob = new Blob([html], { type: "text/html;charset=utf-8" });
+        var a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "anki.html";
+        a.click();
+        setTimeout(function () { try { URL.revokeObjectURL(a.href); } catch (e) {} }, 1000);
+      } catch (e) {
+        toast("ダウンロードできませんでした。このページをブラウザで保存してください。");
+      }
+    });
+    $("searchInput").addEventListener("input", function (e) {
+      state.search = e.target.value;
+      renderList();
+    });
+    $("exportBtn").addEventListener("click", exportJson);
+    $("importBtn").addEventListener("click", function () { $("importFile").click(); });
+    $("importFile").addEventListener("change", function (e) {
+      const file = e.target.files && e.target.files[0];
+      e.target.value = "";
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function () {
+        try {
+          const r = importJsonText(String(reader.result));
+          startReviewSession(true);
+          renderList();
+          renderStats();
+          toast("読み込みました（追加" + r.added + " / 更新" + r.updated + "）");
+        } catch (err) {
+          toast(err.message || "読み込みに失敗しました");
+        }
+      };
+      reader.readAsText(file);
+    });
+    $("notifyBtn").addEventListener("click", function () {
+      try {
+        if (notificationPermission() === "unsupported") return;
+        if (notificationPermission() === "granted") {
+          maybeNotify(true);
+          toast("通知を送りました");
+          return;
+        }
+        var req = Notification.requestPermission();
+        if (req && typeof req.then === "function") {
+          req.then(function () {
+            updateNotifyStatus();
+            maybeNotify(true);
+          }).catch(function () { updateNotifyStatus(); });
+        } else {
+          updateNotifyStatus();
+        }
+      } catch (e) {
+        updateNotifyStatus();
+        toast("この環境では通知を使えません");
+      }
+    });
+    document.addEventListener("keydown", function (e) {
+      if (anyModalOpen()) return;
+      if (state.view !== "review" || !state.current) return;
+      if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+      if (!state.showingBack && (e.key === " " || e.key === "Enter")) {
+        e.preventDefault();
+        revealBack();
+      } else if (state.showingBack) {
+        const map = { "1": "again", "2": "hard", "3": "good", "4": "easy" };
+        if (map[e.key]) { e.preventDefault(); rate(map[e.key]); }
+      }
+    });
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "visible") {
+        startReviewSession(false);
+        maybeNotify(false);
+      }
+    });
+    setInterval(function () {
+      updateTitle();
+      if (state.view === "review") {
+        const dueIds = dueNow().map(function (c) { return c.id; });
+        const known = {};
+        if (state.current) known[state.current] = true;
+        state.queue.forEach(function (id) { known[id] = true; });
+        let added = false;
+        dueIds.forEach(function (id) {
+          if (!known[id]) { state.queue.push(id); added = true; }
+        });
+        if (added && !state.current) {
+          state.current = state.queue.shift() || null;
+          state.showingBack = false;
+        }
+        if (added) renderReview();
+        renderNextDue();
+      }
+      maybeNotify(false);
+    }, 30000);
+  }
+
+  try { probeStorage(); } catch (e) { persistentStorage = false; updateStorageBanner(); }
+  try { initTheme(); } catch (e) {}
+  try { load(); } catch (e) { state.cards = state.cards || []; }
+  try { bind(); } catch (e) { console.error(e); }
+  try { updateNotifyStatus(); } catch (e) {}
+  try { setView("review"); } catch (e) {}
+  try { maybeNotify(false); } catch (e) {}
+})();
+  </script>
+</body>
+</html>
