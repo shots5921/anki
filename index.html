@@ -169,17 +169,26 @@
     .storage-banner button { border: 1px solid #fff; background: transparent; color: #fff; border-radius: 10px; padding: 6px 10px; font-weight: 700; }
     .form-error { color: var(--again); font-size: 0.9rem; font-weight: 600; min-height: 1.2em; }
     textarea.short { min-height: 72px; }
+    /* WebKit hides a closed <dialog> with `dialog:not([open]) { display: none }`.
+       An author `display` on #ocrDialog beats that rule, so the sheet stayed
+       on screen in iPhone Safari even before it was opened. Only show it
+       while the open attribute is set (showModal or the fallback). */
+    #ocrDialog:not([open]) {
+      display: none !important;
+    }
     #ocrDialog {
       width: min(94vw, 520px);
       max-height: calc(100vh - 16px);
       max-height: calc(100dvh - 16px);
-      display: flex;
       flex-direction: column;
       overflow: hidden;
       padding: 0;
       position: fixed;
       left: 50%;
       margin: 0;
+    }
+    #ocrDialog[open] {
+      display: flex;
     }
     #ocrDialog[data-step="pick"] {
       top: 50%;
@@ -194,7 +203,7 @@
       height: calc(100vh - 16px);
       height: min(780px, calc(100dvh - 16px));
     }
-    #ocrDialog.modal-fallback { display: flex; overflow: hidden; }
+    #ocrDialog.modal-fallback { overflow: hidden; }
     .ocr-sheet {
       display: flex;
       flex-direction: column;
@@ -795,6 +804,11 @@ const FlashScheduler = (function () {
     } catch (e) {}
     el.removeAttribute("open");
     el.classList.remove("modal-fallback");
+    if (el.id === "ocrDialog") {
+      el.style.top = "";
+      el.style.height = "";
+      el.style.maxHeight = "";
+    }
     if (!anyModalOpen()) {
       var backdrop = $("modalBackdrop");
       if (backdrop) backdrop.classList.remove("show");
@@ -902,6 +916,7 @@ const FlashScheduler = (function () {
   }
 
   function setView(name) {
+    closeModal($("ocrDialog"));
     state.view = name;
     ["review", "list", "stats"].forEach(function (v) {
       $("view-" + v).classList.toggle("hidden", v !== name);
@@ -1891,6 +1906,15 @@ const FlashScheduler = (function () {
       closeModal($("editDialog"));
       closeModal($("bulkDialog"));
       closeModal($("ocrDialog"));
+    });
+    // iOS Safari delivers a tap on the dialog backdrop to the <dialog> itself.
+    // The page-level backdrop sits under the top layer, so it never sees that tap.
+    ["editDialog", "bulkDialog", "ocrDialog"].forEach(function (id) {
+      var dialog = $(id);
+      if (!dialog) return;
+      dialog.addEventListener("click", function (e) {
+        if (e.target === dialog) closeModal(dialog);
+      });
     });
     $("downloadAppBtn").addEventListener("click", function () {
       try {
