@@ -170,16 +170,29 @@
     .form-error { color: var(--again); font-size: 0.9rem; font-weight: 600; min-height: 1.2em; }
     textarea.short { min-height: 72px; }
     #ocrDialog {
-      width: min(94vw, 560px);
-      height: calc(100vh - 12px);
-      height: min(860px, calc(100vh - 12px));
-      height: min(860px, calc(100dvh - 12px));
-      max-height: calc(100vh - 12px);
-      max-height: calc(100dvh - 12px);
+      width: min(94vw, 520px);
+      max-height: calc(100vh - 16px);
+      max-height: calc(100dvh - 16px);
       display: flex;
       flex-direction: column;
       overflow: hidden;
       padding: 0;
+      position: fixed;
+      left: 50%;
+      margin: 0;
+    }
+    #ocrDialog[data-step="pick"] {
+      top: 50%;
+      transform: translate(-50%, -50%);
+      height: auto;
+    }
+    #ocrDialog[data-step="read"],
+    #ocrDialog[data-step="error"],
+    #ocrDialog[data-step="result"] {
+      top: 8px;
+      transform: translateX(-50%);
+      height: calc(100vh - 16px);
+      height: min(780px, calc(100dvh - 16px));
     }
     #ocrDialog.modal-fallback { display: flex; overflow: hidden; }
     .ocr-sheet {
@@ -189,41 +202,147 @@
       height: 100%;
       overflow: hidden;
     }
+    #ocrDialog[data-step="pick"] .ocr-sheet { height: auto; }
+    .ocr-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--line);
+      flex: none;
+    }
     .ocr-scroll {
       overflow: auto;
       -webkit-overflow-scrolling: touch;
       min-height: 0;
       flex: 1 1 auto;
-      padding: 14px 14px 8px;
+      padding: 16px;
+      display: grid;
+      gap: 16px;
+      align-content: start;
+    }
+    #ocrDialog[data-step="pick"] .ocr-scroll { flex: none; }
+    #ocrStepPick { display: grid; gap: 16px; }
+    #ocrDialog[data-step="result"] .ocr-scroll {
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    #ocrStepResult {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 0;
+      flex: 1 1 auto;
+      overflow: hidden;
+    }
+    #ocrStepResult .ocr-field,
+    #ocrStepResult .ocr-preview,
+    #ocrStepResult .ocr-link { flex: none; }
+    #ocrDialog[data-step="read"] .ocr-scroll,
+    #ocrDialog[data-step="error"] .ocr-scroll { align-content: center; }
+    #ocrDialog h2 { margin: 0; font-size: 1.1rem; }
+    #ocrDialog textarea { min-height: 120px; font-size: 16px; line-height: 1.5; }
+    #ocrDialog textarea.short {
+      height: 44px;
+      min-height: 44px;
+      max-height: 68px;
+      padding-top: 8px;
+      padding-bottom: 8px;
+      line-height: 1.35;
+      overflow: auto;
+    }
+    #ocrStepResult .ocr-thumb { width: 48px; height: 48px; border-radius: 10px; }
+    #ocrDialog .form-error { min-height: 0; }
+    #ocrDialog p { margin: 0; }
+    .ocr-link {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 600;
+      min-height: 44px;
+      padding: 8px 10px;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    .ocr-head .ocr-link { flex: none; }
+    .ocr-choose {
+      min-height: 56px;
+      width: 100%;
+      font-size: 1.05rem;
+    }
+    .ocr-read, .ocr-error-view {
+      display: grid;
+      justify-items: center;
+      gap: 16px;
+      text-align: center;
+      padding: 12px 0 8px;
+    }
+    .ocr-thumb {
+      width: 72px;
+      height: 72px;
+      object-fit: cover;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: var(--bg);
+    }
+    .ocr-preview {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .ocr-preview-copy { display: grid; justify-items: start; min-width: 0; }
+    .ocr-preview .ocr-link { min-height: 44px; padding: 4px 0; }
+    .ocr-status { margin: 0; font-weight: 700; color: var(--accent); font-size: 1.05rem; }
+    .ocr-bar { height: 8px; width: 100%; background: var(--line); border-radius: 99px; overflow: hidden; }
+    .ocr-bar > span { display: block; height: 100%; width: 0; background: var(--accent); }
+    .ocr-chunks {
       display: grid;
       gap: 8px;
       align-content: start;
+      flex: 1 1 auto;
+      min-height: 72px;
+      overflow: auto;
+      -webkit-overflow-scrolling: touch;
     }
-    #ocrDialog h2 { margin: 0; font-size: 1.1rem; }
-    #ocrDialog textarea { min-height: 72px; }
-    #ocrDialog textarea.short { min-height: 44px; }
-    #ocrDialog .form-error { min-height: 0; }
-    #ocrDialog p { margin: 0; }
-    .ocr-status { margin: 0; font-weight: 700; color: var(--accent); }
-    .ocr-bar { height: 8px; background: var(--line); border-radius: 99px; overflow: hidden; }
-    .ocr-bar > span { display: block; height: 100%; width: 0; background: var(--accent); }
-    .hint-inline { margin: 0; font-size: 0.85rem; }
-    .ocr-pick { display: flex; gap: 8px; }
-    .ocr-pick .btn { flex: 1; min-height: 44px; }
-    .ocr-actions {
+    .ocr-chunk {
+      display: block;
+      width: 100%;
+      text-align: left;
+      border: 1px solid var(--line);
+      background: var(--bg);
+      color: var(--ink);
+      border-radius: 12px;
+      padding: 10px 12px;
+      min-height: 44px;
+      line-height: 1.45;
+      font-weight: 600;
+      overflow-wrap: anywhere;
+    }
+    .ocr-chunk.is-on {
+      border-color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 18%, var(--surface));
+    }
+    .ocr-field { display: grid; gap: 6px; }
+    .ocr-field-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .ocr-field-head .btn { min-height: 44px; flex: none; padding: 8px 12px; }
+    .ocr-footer {
       flex: none;
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin: 0;
-      padding: 8px 14px calc(12px + env(safe-area-inset-bottom));
+      gap: 4px;
+      padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
       border-top: 1px solid var(--line);
       background: var(--surface);
     }
-    .ocr-actions .btn { min-height: 44px; }
-    .ocr-actions .wide { grid-column: 1 / -1; }
-    .ocr-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-    .ocr-head .btn { min-height: 40px; padding: 8px 12px; }
+    .ocr-footer .btn.primary { min-height: 48px; width: 100%; }
+    .ocr-links { display: flex; flex-wrap: wrap; justify-content: center; }
+    #ocrError { font-size: 1rem; line-height: 1.5; text-align: center; }
     .status-ok { color: var(--ok); font-weight: 700; }
     #modalBackdrop {
       display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 35;
@@ -327,36 +446,63 @@
     </div>
   </dialog>
 
-  <dialog id="ocrDialog">
+  <dialog id="ocrDialog" data-step="pick">
     <div class="ocr-sheet">
-      <div class="ocr-scroll">
-        <div class="ocr-head">
-          <h2>画像から追加</h2>
-          <button class="btn" type="button" id="ocrClose">閉じる</button>
-        </div>
-        <p class="muted">スクリーンショットの文字を端末内で読み取ります。画像は外に送りません。</p>
-        <input type="file" id="ocrFile" accept="image/*" class="hidden">
-        <p id="ocrStatus" class="ocr-status hidden" aria-live="polite"></p>
-        <div id="ocrBarWrap" class="ocr-bar hidden" aria-hidden="true"><span id="ocrBar"></span></div>
-        <div class="form-error" id="ocrError" role="alert"></div>
-        <label for="ocrText">読み取った文字</label>
-        <textarea id="ocrText" placeholder="ここに読み取った文字が表示されます。直してから使えます。"></textarea>
-        <p class="muted hint-inline">文字を選択して「単語にする」「意味にする」を押します。</p>
-        <div class="ocr-pick">
-          <button class="btn" type="button" id="ocrToFront">単語にする</button>
-          <button class="btn" type="button" id="ocrToBack">意味にする</button>
-        </div>
-        <label for="ocrFront">単語</label>
-        <textarea id="ocrFront" class="short" placeholder="例：apple"></textarea>
-        <label for="ocrBack">意味</label>
-        <textarea id="ocrBack" class="short" placeholder="例：りんご"></textarea>
-        <div class="form-error" id="ocrCardError" role="alert"></div>
-        <button class="btn" type="button" id="ocrRepick">別の画像を選ぶ</button>
+      <div class="ocr-head">
+        <h2>画像から追加</h2>
+        <button class="ocr-link" type="button" id="ocrClose">閉じる</button>
       </div>
-      <div class="dialog-actions ocr-actions">
-        <button class="btn primary wide" type="button" id="ocrAddBtn">カードを追加</button>
-        <button class="btn wide" type="button" id="ocrToBulk">まとめて追加へ送る</button>
+      <div class="ocr-scroll" id="ocrScroll">
+        <div id="ocrStepPick">
+          <p class="muted">スクリーンショットや写真の文字を、この端末の中で読み取ります。</p>
+          <button class="btn primary ocr-choose" type="button" id="ocrPickBtn">画像を選ぶ</button>
+        </div>
+        <div id="ocrStepRead" class="ocr-read hidden">
+          <img id="ocrThumb" class="ocr-thumb" alt="選んだ画像">
+          <p id="ocrStatus" class="ocr-status" aria-live="polite">読み取り中… 0%</p>
+          <div id="ocrBarWrap" class="ocr-bar" aria-hidden="true"><span id="ocrBar"></span></div>
+        </div>
+        <div id="ocrStepError" class="ocr-error-view hidden">
+          <img id="ocrThumbError" class="ocr-thumb hidden" alt="">
+          <p id="ocrError" class="form-error" role="alert"></p>
+          <button class="ocr-link" type="button" id="ocrErrorRepick">別の画像を選ぶ</button>
+          <button class="ocr-link" type="button" id="ocrTypeInstead">文字を手入力する</button>
+        </div>
+        <div id="ocrStepResult" class="hidden">
+          <div class="ocr-preview">
+            <img id="ocrThumbResult" class="ocr-thumb" alt="選んだ画像">
+            <div class="ocr-preview-copy">
+              <p class="muted">行をタップして選んでください。</p>
+              <button class="ocr-link" type="button" id="ocrEditToggle">文字を直す</button>
+            </div>
+          </div>
+          <div id="ocrChunks" class="ocr-chunks" role="group" aria-label="読み取った文字"></div>
+          <textarea id="ocrText" class="hidden" placeholder="読み取った文字を直せます"></textarea>
+          <div class="ocr-field">
+            <div class="ocr-field-head">
+              <label for="ocrFront">単語</label>
+              <button class="btn" type="button" id="ocrToFront">単語にする</button>
+            </div>
+            <textarea id="ocrFront" class="short" placeholder="選んだ文字" autocomplete="off"></textarea>
+          </div>
+          <div class="ocr-field">
+            <div class="ocr-field-head">
+              <label for="ocrBack">意味</label>
+              <button class="btn" type="button" id="ocrToBack">意味にする</button>
+            </div>
+            <textarea id="ocrBack" class="short" placeholder="選んだ文字" autocomplete="off"></textarea>
+          </div>
+          <div class="form-error" id="ocrCardError" role="alert"></div>
+        </div>
       </div>
+      <div id="ocrFooter" class="ocr-footer hidden">
+        <button class="btn primary" type="button" id="ocrAddBtn">カードを追加</button>
+        <div class="ocr-links">
+          <button class="ocr-link" type="button" id="ocrToBulk">まとめて追加へ送る</button>
+          <button class="ocr-link" type="button" id="ocrRepick">別の画像</button>
+        </div>
+      </div>
+      <input type="file" id="ocrFile" accept="image/*" class="hidden">
     </div>
   </dialog>
 
@@ -1178,6 +1324,9 @@ const FlashScheduler = (function () {
   var ocrRunId = 0;
   var ocrRange = null;
   var ocrRangeClearTimer = null;
+  var ocrSelectedIdx = {};
+  var ocrEditing = false;
+  var ocrThumbUrl = null;
 
   function tidyOcrText(text) {
     var jp = /[\u3040-\u30ff\u3400-\u9fff\u3000-\u303f\uff01-\uffef]/;
@@ -1281,21 +1430,114 @@ const FlashScheduler = (function () {
   function setOcrProgress(pct) {
     var n = Math.max(0, Math.min(100, Math.round(pct)));
     var status = $("ocrStatus");
-    var wrap = $("ocrBarWrap");
     var bar = $("ocrBar");
-    if (status) {
-      status.textContent = "読み取り中… " + n + "%";
-      status.classList.remove("hidden");
-    }
-    if (wrap) wrap.classList.remove("hidden");
+    if (status) status.textContent = "読み取り中… " + n + "%";
     if (bar) bar.style.width = n + "%";
   }
 
   function hideOcrProgress() {
-    var status = $("ocrStatus");
-    var wrap = $("ocrBarWrap");
-    if (status) status.classList.add("hidden");
-    if (wrap) wrap.classList.add("hidden");
+    var bar = $("ocrBar");
+    if (bar) bar.style.width = "0%";
+  }
+
+  function setOcrStep(step) {
+    var dialog = $("ocrDialog");
+    if (dialog) dialog.setAttribute("data-step", step);
+    $("ocrStepPick").classList.toggle("hidden", step !== "pick");
+    $("ocrStepRead").classList.toggle("hidden", step !== "read");
+    $("ocrStepError").classList.toggle("hidden", step !== "error");
+    $("ocrStepResult").classList.toggle("hidden", step !== "result");
+    $("ocrFooter").classList.toggle("hidden", step !== "result");
+    syncOcrViewport();
+  }
+
+  function syncOcrViewport() {
+    var dialog = $("ocrDialog");
+    if (!dialog || !isModalOpen(dialog)) return;
+    var vv = window.visualViewport;
+    var keyboard = vv && vv.height < window.innerHeight * 0.75;
+    if (!keyboard || dialog.getAttribute("data-step") !== "result") {
+      dialog.style.top = "";
+      dialog.style.height = "";
+      dialog.style.maxHeight = "";
+      return;
+    }
+    var h = Math.max(280, Math.round(vv.height - 8));
+    dialog.style.top = Math.round(vv.offsetTop + 4) + "px";
+    dialog.style.height = h + "px";
+    dialog.style.maxHeight = h + "px";
+  }
+
+  function setOcrThumb(file) {
+    if (ocrThumbUrl) URL.revokeObjectURL(ocrThumbUrl);
+    ocrThumbUrl = file ? URL.createObjectURL(file) : "";
+    ["ocrThumb", "ocrThumbResult", "ocrThumbError"].forEach(function (id) {
+      var img = $(id);
+      if (!img) return;
+      if (ocrThumbUrl) img.src = ocrThumbUrl;
+      img.classList.toggle("hidden", !ocrThumbUrl);
+    });
+  }
+
+  function ocrLines() {
+    return $("ocrText").value.split(/\n/).map(function (line) {
+      return line.replace(/^\s+|\s+$/g, "");
+    }).filter(Boolean);
+  }
+
+  function renderOcrChunks() {
+    var host = $("ocrChunks");
+    if (!host) return;
+    var lines = ocrLines();
+    host.innerHTML = "";
+    lines.forEach(function (line, i) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "ocr-chunk" + (ocrSelectedIdx[i] ? " is-on" : "");
+      btn.setAttribute("aria-pressed", ocrSelectedIdx[i] ? "true" : "false");
+      btn.textContent = line;
+      btn.addEventListener("click", function () {
+        if (ocrSelectedIdx[i]) delete ocrSelectedIdx[i];
+        else ocrSelectedIdx[i] = true;
+        btn.classList.toggle("is-on", !!ocrSelectedIdx[i]);
+        btn.setAttribute("aria-pressed", ocrSelectedIdx[i] ? "true" : "false");
+      });
+      host.appendChild(btn);
+    });
+  }
+
+  function selectedChunkText() {
+    var lines = ocrLines();
+    var idxs = [];
+    Object.keys(ocrSelectedIdx).forEach(function (key) {
+      var i = Number(key);
+      if (ocrSelectedIdx[key] && lines[i]) idxs.push(i);
+    });
+    idxs.sort(function (a, b) { return a - b; });
+    if (!idxs.length) return "";
+    var groups = [];
+    var buf = lines[idxs[0]];
+    for (var k = 1; k < idxs.length; k++) {
+      if (idxs[k] === idxs[k - 1] + 1) buf += lines[idxs[k]];
+      else {
+        groups.push(buf);
+        buf = lines[idxs[k]];
+      }
+    }
+    groups.push(buf);
+    return groups.join("\n").replace(/^\s+|\s+$/g, "");
+  }
+
+  function setOcrEditing(on) {
+    ocrEditing = !!on;
+    $("ocrText").classList.toggle("hidden", !ocrEditing);
+    $("ocrChunks").classList.toggle("hidden", ocrEditing);
+    var toggle = $("ocrEditToggle");
+    if (toggle) toggle.textContent = ocrEditing ? "行の選択に戻る" : "文字を直す";
+    if (!ocrEditing) {
+      ocrSelectedIdx = {};
+      renderOcrChunks();
+    }
   }
 
   function showOcrError(msg) {
@@ -1386,10 +1628,14 @@ const FlashScheduler = (function () {
   function beginOcr(file) {
     var runId = ++ocrRunId;
     ocrRange = null;
+    ocrSelectedIdx = {};
     $("ocrText").value = "";
+    setOcrEditing(false);
     setFormError("ocrError", "");
     setFormError("ocrCardError", "");
+    setOcrThumb(file);
     setOcrProgress(0);
+    setOcrStep("read");
     ocrChain = ocrChain.then(function () {
       if (runId !== ocrRunId) return;
       return prepareImage(file).then(function (canvas) {
@@ -1409,12 +1655,21 @@ const FlashScheduler = (function () {
           $("ocrText").value = text;
           setOcrProgress(100);
           hideOcrProgress();
-          if (!text) showOcrError("文字を読み取れませんでした。明るい画像でもう一度試すか、下の欄に直接入力してください。");
+          ocrSelectedIdx = {};
+          if (!text) {
+            setOcrStep("error");
+            showOcrError("文字を読み取れませんでした。別の画像を試すか、文字を手入力してください。");
+            return;
+          }
+          setOcrEditing(false);
+          renderOcrChunks();
+          setOcrStep("result");
         });
       });
     }).catch(function (err) {
       if (runId !== ocrRunId) return;
       hideOcrProgress();
+      setOcrStep("error");
       if (err && err.kind === "image") showOcrError("この画像を開けませんでした。別の画像を選んでください。");
       else if (err && err.kind === "script") showOcrError("読み取り機能を読み込めませんでした。通信を確認して、もう一度お試しください。");
       else {
@@ -1423,6 +1678,13 @@ const FlashScheduler = (function () {
       }
       try { console.error(err); } catch (e) {}
     });
+  }
+
+  function openOcrSheet() {
+    setFormError("ocrError", "");
+    setFormError("ocrCardError", "");
+    setOcrStep("pick");
+    openModal($("ocrDialog"));
   }
 
   function openOcrPicker() {
@@ -1456,16 +1718,29 @@ const FlashScheduler = (function () {
     return "";
   }
 
+  function textForAssign() {
+    if (ocrEditing) return ocrSelectedText().replace(/^\s+|\s+$/g, "");
+    return selectedChunkText();
+  }
+
   function assignOcrSelection(inputId) {
-    var text = ocrSelectedText().replace(/^\s+|\s+$/g, "");
+    var text = textForAssign();
     if (!text) {
-      var msg = "読み取った文字を選択してから押してください。";
+      var msg = ocrEditing ? "直した文字を選択してから押してください。" : "行をタップして選んでから押してください。";
       setFormError("ocrCardError", msg);
       toast(msg);
       return;
     }
     $(inputId).value = text;
+    fitShortField($(inputId));
     setFormError("ocrCardError", "");
+  }
+
+  function fitShortField(el) {
+    if (!el) return;
+    el.style.height = "44px";
+    var next = Math.min(68, Math.max(44, el.scrollHeight));
+    el.style.height = next + "px";
   }
 
   function bindOcrAssign(btn, inputId) {
@@ -1489,7 +1764,11 @@ const FlashScheduler = (function () {
     insertCard(front, back);
     $("ocrFront").value = "";
     $("ocrBack").value = "";
-    setFormError("ocrCardError", "追加しました。続けて別のカードも作れます。");
+    fitShortField($("ocrFront"));
+    fitShortField($("ocrBack"));
+    ocrSelectedIdx = {};
+    renderOcrChunks();
+    setFormError("ocrCardError", "追加しました。別の行からも作れます。");
     toast("追加しました");
   }
 
@@ -1542,14 +1821,24 @@ const FlashScheduler = (function () {
         submitBulk();
       }
     });
-    $("ocrBtn").addEventListener("click", openOcrPicker);
+    $("ocrBtn").addEventListener("click", openOcrSheet);
+    $("ocrPickBtn").addEventListener("click", openOcrPicker);
     $("ocrRepick").addEventListener("click", openOcrPicker);
+    $("ocrErrorRepick").addEventListener("click", openOcrPicker);
+    $("ocrTypeInstead").addEventListener("click", function () {
+      setOcrStep("result");
+      setOcrEditing(true);
+      try { $("ocrText").focus(); } catch (e) {}
+    });
+    $("ocrEditToggle").addEventListener("click", function () { setOcrEditing(!ocrEditing); });
     $("ocrFile").addEventListener("change", function (e) {
       var file = e.target.files && e.target.files[0];
       e.target.value = "";
       if (!file) return;
       openModal($("ocrDialog"));
       if (file.type && file.type.indexOf("image/") !== 0) {
+        setOcrThumb(null);
+        setOcrStep("error");
         showOcrError("画像ファイルを選んでください。");
         return;
       }
@@ -1565,6 +1854,24 @@ const FlashScheduler = (function () {
     $("ocrText").addEventListener("mouseup", captureOcrRange);
     $("ocrText").addEventListener("touchend", captureOcrRange);
     $("ocrText").addEventListener("input", function () { ocrRange = null; });
+    ["ocrFront", "ocrBack", "ocrText"].forEach(function (id) {
+      $(id).addEventListener("focus", function () {
+        setTimeout(function () {
+          syncOcrViewport();
+          var el = $(id);
+          var scroller = $("ocrScroll");
+          if (!el || !scroller) return;
+          var s = scroller.getBoundingClientRect();
+          var r = el.getBoundingClientRect();
+          if (r.bottom > s.bottom - 8) scroller.scrollTop += r.bottom - s.bottom + 16;
+          else if (r.top < s.top + 8) scroller.scrollTop -= s.top + 8 - r.top;
+        }, 60);
+      });
+    });
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", syncOcrViewport);
+      window.visualViewport.addEventListener("scroll", syncOcrViewport);
+    }
     document.addEventListener("selectionchange", function () {
       var ta = $("ocrText");
       if (!ta || document.activeElement !== ta) return;
