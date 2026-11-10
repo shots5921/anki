@@ -168,6 +168,62 @@
     :root[data-theme="dark"] .storage-banner { background: #b42318; }
     .storage-banner button { border: 1px solid #fff; background: transparent; color: #fff; border-radius: 10px; padding: 6px 10px; font-weight: 700; }
     .form-error { color: var(--again); font-size: 0.9rem; font-weight: 600; min-height: 1.2em; }
+    textarea.short { min-height: 72px; }
+    #ocrDialog {
+      width: min(94vw, 560px);
+      height: calc(100vh - 12px);
+      height: min(860px, calc(100vh - 12px));
+      height: min(860px, calc(100dvh - 12px));
+      max-height: calc(100vh - 12px);
+      max-height: calc(100dvh - 12px);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      padding: 0;
+    }
+    #ocrDialog.modal-fallback { display: flex; overflow: hidden; }
+    .ocr-sheet {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      height: 100%;
+      overflow: hidden;
+    }
+    .ocr-scroll {
+      overflow: auto;
+      -webkit-overflow-scrolling: touch;
+      min-height: 0;
+      flex: 1 1 auto;
+      padding: 14px 14px 8px;
+      display: grid;
+      gap: 8px;
+      align-content: start;
+    }
+    #ocrDialog h2 { margin: 0; font-size: 1.1rem; }
+    #ocrDialog textarea { min-height: 72px; }
+    #ocrDialog textarea.short { min-height: 44px; }
+    #ocrDialog .form-error { min-height: 0; }
+    #ocrDialog p { margin: 0; }
+    .ocr-status { margin: 0; font-weight: 700; color: var(--accent); }
+    .ocr-bar { height: 8px; background: var(--line); border-radius: 99px; overflow: hidden; }
+    .ocr-bar > span { display: block; height: 100%; width: 0; background: var(--accent); }
+    .hint-inline { margin: 0; font-size: 0.85rem; }
+    .ocr-pick { display: flex; gap: 8px; }
+    .ocr-pick .btn { flex: 1; min-height: 44px; }
+    .ocr-actions {
+      flex: none;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin: 0;
+      padding: 8px 14px calc(12px + env(safe-area-inset-bottom));
+      border-top: 1px solid var(--line);
+      background: var(--surface);
+    }
+    .ocr-actions .btn { min-height: 44px; }
+    .ocr-actions .wide { grid-column: 1 / -1; }
+    .ocr-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .ocr-head .btn { min-height: 40px; padding: 8px 12px; }
     .status-ok { color: var(--ok); font-weight: 700; }
     #modalBackdrop {
       display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 35;
@@ -218,6 +274,7 @@
         <input type="search" id="searchInput" placeholder="表または裏で検索" autocomplete="off">
         <button class="btn primary" type="button" id="addBtn">追加</button>
         <button class="btn" type="button" id="bulkBtn">まとめて追加</button>
+        <button class="btn" type="button" id="ocrBtn">画像から追加</button>
         <button class="btn" type="button" id="exportBtn">書き出し</button>
         <button class="btn" type="button" id="importBtn">読み込み</button>
         <input type="file" id="importFile" accept="application/json,.json" class="hidden">
@@ -266,6 +323,39 @@
       <div class="dialog-actions">
         <button class="btn" type="button" id="bulkCancel">やめる</button>
         <button class="btn primary" type="button" id="bulkSaveBtn">登録</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="ocrDialog">
+    <div class="ocr-sheet">
+      <div class="ocr-scroll">
+        <div class="ocr-head">
+          <h2>画像から追加</h2>
+          <button class="btn" type="button" id="ocrClose">閉じる</button>
+        </div>
+        <p class="muted">スクリーンショットの文字を端末内で読み取ります。画像は外に送りません。</p>
+        <input type="file" id="ocrFile" accept="image/*" class="hidden">
+        <p id="ocrStatus" class="ocr-status hidden" aria-live="polite"></p>
+        <div id="ocrBarWrap" class="ocr-bar hidden" aria-hidden="true"><span id="ocrBar"></span></div>
+        <div class="form-error" id="ocrError" role="alert"></div>
+        <label for="ocrText">読み取った文字</label>
+        <textarea id="ocrText" placeholder="ここに読み取った文字が表示されます。直してから使えます。"></textarea>
+        <p class="muted hint-inline">文字を選択して「単語にする」「意味にする」を押します。</p>
+        <div class="ocr-pick">
+          <button class="btn" type="button" id="ocrToFront">単語にする</button>
+          <button class="btn" type="button" id="ocrToBack">意味にする</button>
+        </div>
+        <label for="ocrFront">単語</label>
+        <textarea id="ocrFront" class="short" placeholder="例：apple"></textarea>
+        <label for="ocrBack">意味</label>
+        <textarea id="ocrBack" class="short" placeholder="例：りんご"></textarea>
+        <div class="form-error" id="ocrCardError" role="alert"></div>
+        <button class="btn" type="button" id="ocrRepick">別の画像を選ぶ</button>
+      </div>
+      <div class="dialog-actions ocr-actions">
+        <button class="btn primary wide" type="button" id="ocrAddBtn">カードを追加</button>
+        <button class="btn wide" type="button" id="ocrToBulk">まとめて追加へ送る</button>
       </div>
     </div>
   </dialog>
@@ -430,7 +520,7 @@ const FlashScheduler = (function () {
   const THEME_KEY = "deruma-flashcards-theme";
   const NOTIFY_KEY = "deruma-flashcards-last-notify";
   const BASE_TITLE = "暗記カード";
-  const HELP_HTML = "<h2>使い方</h2><ol><li>右上の「追加」から、覚えたいこと（表）とその意味（裏）を登録します。まとめて追加なら一覧の「まとめて追加」に「単語,意味」を1行ずつ貼り付けられます。</li><li>「今日の復習」で期限が来たカードの表を見て思い出し、タップして裏を確認します。</li><li>「もう一度／難しい／普通／簡単」で自己評価すると、忘却曲線に沿って次の復習日が決まります。初回は当日中に再出題され、その後は1日→3日→7日→14日→30日…と伸びていきます。間違えたらやり直しです。</li><li>データはこのブラウザに保存されます。書き出しでJSONバックアップを取れます。</li></ol><p><button type=\"button\" class=\"btn primary js-open-add\">カードを追加</button></p>";
+  const HELP_HTML = "<h2>使い方</h2><ol><li>右上の「追加」から、覚えたいこと（表）とその意味（裏）を登録します。まとめて追加なら一覧の「まとめて追加」に「単語,意味」を1行ずつ貼り付けられます。スクリーンショットは一覧の「画像から追加」で読み取れます。</li><li>「今日の復習」で期限が来たカードの表を見て思い出し、タップして裏を確認します。</li><li>「もう一度／難しい／普通／簡単」で自己評価すると、忘却曲線に沿って次の復習日が決まります。初回は当日中に再出題され、その後は1日→3日→7日→14日→30日…と伸びていきます。間違えたらやり直しです。</li><li>データはこのブラウザに保存されます。書き出しでJSONバックアップを取れます。</li></ol><p><button type=\"button\" class=\"btn primary js-open-add\">カードを追加</button></p>";
 
   const $ = function (id) { return document.getElementById(id); };
   const state = {
@@ -521,12 +611,20 @@ const FlashScheduler = (function () {
     return !!(el && (el.open || el.classList.contains("modal-fallback") || el.hasAttribute("open")));
   }
 
+  var MODAL_IDS = ["editDialog", "bulkDialog", "ocrDialog"];
+
   function anyModalOpen() {
-    return isModalOpen($("editDialog")) || isModalOpen($("bulkDialog"));
+    for (var i = 0; i < MODAL_IDS.length; i++) {
+      if (isModalOpen($(MODAL_IDS[i]))) return true;
+    }
+    return false;
   }
 
   function openModal(el) {
-    closeModal($("editDialog") === el ? $("bulkDialog") : $("editDialog"));
+    for (var mi = 0; mi < MODAL_IDS.length; mi++) {
+      var other = $(MODAL_IDS[mi]);
+      if (other && other !== el) closeModal(other);
+    }
     var usedNative = false;
     try {
       if (el && typeof el.showModal === "function") {
@@ -860,6 +958,17 @@ const FlashScheduler = (function () {
     try { $("frontInput").focus(); } catch (e) {}
   }
 
+  function insertCard(front, back) {
+    var card = newCard(front, back);
+    state.cards.push(card);
+    save();
+    renderList();
+    if (state.view === "stats") renderStats();
+    startReviewSession(true);
+    updateTitle();
+    return card;
+  }
+
   function submitEdit() {
     const front = $("frontInput").value.trim();
     const back = $("backInput").value.trim();
@@ -874,17 +983,18 @@ const FlashScheduler = (function () {
       if (card) { card.front = front; card.back = back; }
       setFormError("editError", "更新しました");
       toast("更新しました");
-    } else {
-      state.cards.push(newCard(front, back));
-      setFormError("editError", "追加しました");
-      toast("追加しました");
+      save();
+      closeModal($("editDialog"));
+      renderList();
+      if (state.view === "stats") renderStats();
+      startReviewSession(true);
+      updateTitle();
+      return true;
     }
-    save();
+    insertCard(front, back);
+    setFormError("editError", "追加しました");
+    toast("追加しました");
     closeModal($("editDialog"));
-    renderList();
-    if (state.view === "stats") renderStats();
-    startReviewSession(true);
-    updateTitle();
     return true;
   }
 
@@ -1058,6 +1168,345 @@ const FlashScheduler = (function () {
     } catch (e) {}
   }
 
+  /* ===== Image OCR (Tesseract.js, lazy-loaded) ===== */
+  var TESSERACT_URL = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
+  var OCR_MAX_SIDE = 2000;
+  var tesseractPromise = null;
+  var ocrWorkerPromise = null;
+  var ocrLogger = function () {};
+  var ocrChain = Promise.resolve();
+  var ocrRunId = 0;
+  var ocrRange = null;
+  var ocrRangeClearTimer = null;
+
+  function tidyOcrText(text) {
+    var jp = /[\u3040-\u30ff\u3400-\u9fff\u3000-\u303f\uff01-\uffef]/;
+    var punct = /[()[\]{}<>「」『』【】（）〈〉《》、。，．！？!?：:；;・"'“”‘’]/;
+    var s = String(text || "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    var out = [];
+    for (var i = 0; i < s.length; i++) {
+      var ch = s.charAt(i);
+      if (ch === " " || ch === "\t" || ch === "\u3000") {
+        var prev = out.length ? out[out.length - 1] : "";
+        var j = i + 1;
+        while (j < s.length && (s.charAt(j) === " " || s.charAt(j) === "\t" || s.charAt(j) === "\u3000")) j++;
+        var next = j < s.length ? s.charAt(j) : "";
+        var prevJp = jp.test(prev);
+        var nextJp = jp.test(next);
+        var prevP = punct.test(prev);
+        var nextP = punct.test(next);
+        if ((prevJp && (nextJp || nextP)) || (nextJp && prevP)) continue;
+        if (!prev || prev === "\n" || prev === " ") continue;
+        if (!next || next === "\n") continue;
+        out.push(" ");
+        continue;
+      }
+      out.push(ch);
+    }
+    return out.join("").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").replace(/^\s+|\s+$/g, "");
+  }
+
+  function loadTesseract() {
+    if (window.Tesseract && typeof window.Tesseract.createWorker === "function") {
+      return Promise.resolve(window.Tesseract);
+    }
+    if (tesseractPromise) return tesseractPromise;
+    tesseractPromise = new Promise(function (resolve, reject) {
+      var script = document.createElement("script");
+      script.src = TESSERACT_URL;
+      script.async = true;
+      script.onload = function () {
+        if (window.Tesseract && typeof window.Tesseract.createWorker === "function") resolve(window.Tesseract);
+        else {
+          tesseractPromise = null;
+          var err = new Error("script");
+          err.kind = "script";
+          reject(err);
+        }
+      };
+      script.onerror = function () {
+        tesseractPromise = null;
+        var err = new Error("script");
+        err.kind = "script";
+        reject(err);
+      };
+      document.head.appendChild(script);
+    });
+    return tesseractPromise;
+  }
+
+  function dropOcrWorker() {
+    var pending = ocrWorkerPromise;
+    ocrWorkerPromise = null;
+    if (!pending) return;
+    pending.then(function (worker) {
+      try { worker.terminate(); } catch (e) {}
+    }).catch(function () {});
+  }
+
+  function getOcrWorker() {
+    if (!ocrWorkerPromise) {
+      ocrWorkerPromise = loadTesseract().then(function (Tesseract) {
+        return Tesseract.createWorker("jpn+eng", 1, {
+          logger: function (m) {
+            try { ocrLogger(m); } catch (e) {}
+          }
+        });
+      }).catch(function (err) {
+        ocrWorkerPromise = null;
+        if (err && !err.kind) err.kind = "script";
+        throw err;
+      });
+    }
+    return ocrWorkerPromise;
+  }
+
+  function ocrPercent(m) {
+    if (!m || typeof m.status !== "string") return null;
+    var p = typeof m.progress === "number" ? m.progress : 0;
+    if (p < 0) p = 0;
+    if (p > 1) p = 1;
+    var ranges = {
+      "loading tesseract core": [2, 15],
+      "initializing tesseract": [15, 28],
+      "loading language traineddata": [28, 72],
+      "initializing api": [72, 82],
+      "recognizing text": [82, 99]
+    };
+    var range = ranges[m.status];
+    if (!range) return null;
+    return Math.round(range[0] + (range[1] - range[0]) * p);
+  }
+
+  function setOcrProgress(pct) {
+    var n = Math.max(0, Math.min(100, Math.round(pct)));
+    var status = $("ocrStatus");
+    var wrap = $("ocrBarWrap");
+    var bar = $("ocrBar");
+    if (status) {
+      status.textContent = "読み取り中… " + n + "%";
+      status.classList.remove("hidden");
+    }
+    if (wrap) wrap.classList.remove("hidden");
+    if (bar) bar.style.width = n + "%";
+  }
+
+  function hideOcrProgress() {
+    var status = $("ocrStatus");
+    var wrap = $("ocrBarWrap");
+    if (status) status.classList.add("hidden");
+    if (wrap) wrap.classList.add("hidden");
+  }
+
+  function showOcrError(msg) {
+    setFormError("ocrError", msg || "");
+    if (msg) toast(msg);
+  }
+
+  function loadImageSource(file) {
+    if (typeof createImageBitmap === "function") {
+      try {
+        return createImageBitmap(file, { imageOrientation: "from-image" }).catch(function () {
+          return createImageBitmap(file);
+        });
+      } catch (e) {}
+    }
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () {
+        URL.revokeObjectURL(url);
+        resolve(img);
+      };
+      img.onerror = function () {
+        URL.revokeObjectURL(url);
+        reject(new Error("image"));
+      };
+      img.src = url;
+    });
+  }
+
+  function averageLuminance(src) {
+    var probe = document.createElement("canvas");
+    probe.width = 40;
+    probe.height = 40;
+    var pctx = probe.getContext("2d");
+    pctx.drawImage(src, 0, 0, 40, 40);
+    var data = pctx.getImageData(0, 0, 40, 40).data;
+    var sum = 0;
+    var n = 0;
+    for (var i = 0; i < data.length; i += 4) {
+      sum += 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
+      n++;
+    }
+    return n ? sum / n : 255;
+  }
+
+  function prepareImage(file) {
+    return loadImageSource(file).then(function (src) {
+      try {
+        var w = src.naturalWidth || src.width;
+        var h = src.naturalHeight || src.height;
+        if (!w || !h) throw new Error("image");
+        var scale = Math.min(1, OCR_MAX_SIDE / Math.max(w, h));
+        var cw = Math.max(1, Math.round(w * scale));
+        var ch = Math.max(1, Math.round(h * scale));
+        var canvas = document.createElement("canvas");
+        canvas.width = cw;
+        canvas.height = ch;
+        var ctx = canvas.getContext("2d", { willReadFrequently: true }) || canvas.getContext("2d");
+        ctx.imageSmoothingEnabled = true;
+        try { ctx.imageSmoothingQuality = "high"; } catch (e) {}
+        ctx.drawImage(src, 0, 0, cw, ch);
+        if (averageLuminance(src) < 110) {
+          var imageData = ctx.getImageData(0, 0, cw, ch);
+          var pixels = imageData.data;
+          for (var i = 0; i < pixels.length; i += 4) {
+            pixels[i] = 255 - pixels[i];
+            pixels[i + 1] = 255 - pixels[i + 1];
+            pixels[i + 2] = 255 - pixels[i + 2];
+          }
+          ctx.putImageData(imageData, 0, 0);
+        }
+        if (typeof src.close === "function") src.close();
+        return canvas;
+      } catch (e) {
+        if (src && typeof src.close === "function") src.close();
+        var err = new Error("image");
+        err.kind = "image";
+        throw err;
+      }
+    }, function () {
+      var err = new Error("image");
+      err.kind = "image";
+      throw err;
+    });
+  }
+
+  function beginOcr(file) {
+    var runId = ++ocrRunId;
+    ocrRange = null;
+    $("ocrText").value = "";
+    setFormError("ocrError", "");
+    setFormError("ocrCardError", "");
+    setOcrProgress(0);
+    ocrChain = ocrChain.then(function () {
+      if (runId !== ocrRunId) return;
+      return prepareImage(file).then(function (canvas) {
+        if (runId !== ocrRunId) return;
+        ocrLogger = function (m) {
+          if (runId !== ocrRunId) return;
+          var pct = ocrPercent(m);
+          if (pct == null) return;
+          setOcrProgress(pct);
+        };
+        return getOcrWorker().then(function (worker) {
+          if (runId !== ocrRunId) return;
+          return worker.recognize(canvas, {}, { text: true, blocks: false, hocr: false, tsv: false });
+        }).then(function (ret) {
+          if (runId !== ocrRunId || !ret) return;
+          var text = tidyOcrText(ret.data && ret.data.text);
+          $("ocrText").value = text;
+          setOcrProgress(100);
+          hideOcrProgress();
+          if (!text) showOcrError("文字を読み取れませんでした。明るい画像でもう一度試すか、下の欄に直接入力してください。");
+        });
+      });
+    }).catch(function (err) {
+      if (runId !== ocrRunId) return;
+      hideOcrProgress();
+      if (err && err.kind === "image") showOcrError("この画像を開けませんでした。別の画像を選んでください。");
+      else if (err && err.kind === "script") showOcrError("読み取り機能を読み込めませんでした。通信を確認して、もう一度お試しください。");
+      else {
+        dropOcrWorker();
+        showOcrError("文字を読み取れませんでした。通信を確認するか、別の画像でもう一度お試しください。");
+      }
+      try { console.error(err); } catch (e) {}
+    });
+  }
+
+  function openOcrPicker() {
+    var input = $("ocrFile");
+    var dialog = $("ocrDialog");
+    if (!input) return;
+    if (isModalOpen(dialog)) dialog.appendChild(input);
+    else document.body.appendChild(input);
+    input.click();
+  }
+
+  function captureOcrRange() {
+    var ta = $("ocrText");
+    if (!ta || document.activeElement !== ta) return;
+    var a = ta.selectionStart;
+    var b = ta.selectionEnd;
+    if (a == null || b == null || a === b) return;
+    clearTimeout(ocrRangeClearTimer);
+    ocrRange = { start: Math.min(a, b), end: Math.max(a, b) };
+  }
+
+  function ocrSelectedText() {
+    var ta = $("ocrText");
+    if (!ta) return "";
+    var a = ta.selectionStart;
+    var b = ta.selectionEnd;
+    if (a != null && b != null && a !== b) return ta.value.slice(Math.min(a, b), Math.max(a, b));
+    if (ocrRange && ocrRange.end > ocrRange.start && ocrRange.end <= ta.value.length) {
+      return ta.value.slice(ocrRange.start, ocrRange.end);
+    }
+    return "";
+  }
+
+  function assignOcrSelection(inputId) {
+    var text = ocrSelectedText().replace(/^\s+|\s+$/g, "");
+    if (!text) {
+      var msg = "読み取った文字を選択してから押してください。";
+      setFormError("ocrCardError", msg);
+      toast(msg);
+      return;
+    }
+    $(inputId).value = text;
+    setFormError("ocrCardError", "");
+  }
+
+  function bindOcrAssign(btn, inputId) {
+    btn.addEventListener("mousedown", function (e) {
+      captureOcrRange();
+      if (e.cancelable) e.preventDefault();
+    });
+    btn.addEventListener("touchstart", function () { captureOcrRange(); }, { passive: true });
+    btn.addEventListener("click", function () { assignOcrSelection(inputId); });
+  }
+
+  function addCardFromOcr() {
+    var front = $("ocrFront").value.trim();
+    var back = $("ocrBack").value.trim();
+    var reason = emptyReason(front, back);
+    if (reason) {
+      setFormError("ocrCardError", reason);
+      toast(reason);
+      return;
+    }
+    insertCard(front, back);
+    $("ocrFront").value = "";
+    $("ocrBack").value = "";
+    setFormError("ocrCardError", "追加しました。続けて別のカードも作れます。");
+    toast("追加しました");
+  }
+
+  function sendOcrToBulk() {
+    var text = $("ocrText").value;
+    if (!text.trim()) {
+      var msg = "送る文字がありません。画像を読み取るか、文字を入力してください。";
+      setFormError("ocrCardError", msg);
+      toast(msg);
+      return;
+    }
+    $("bulkInput").value = text;
+    setFormError("bulkError", "");
+    openModal($("bulkDialog"));
+    try { $("bulkInput").focus(); } catch (e) {}
+  }
+
   function bind() {
     document.querySelectorAll("nav.tabs button").forEach(function (b) {
       b.addEventListener("click", function () { setView(b.getAttribute("data-view")); });
@@ -1093,9 +1542,48 @@ const FlashScheduler = (function () {
         submitBulk();
       }
     });
+    $("ocrBtn").addEventListener("click", openOcrPicker);
+    $("ocrRepick").addEventListener("click", openOcrPicker);
+    $("ocrFile").addEventListener("change", function (e) {
+      var file = e.target.files && e.target.files[0];
+      e.target.value = "";
+      if (!file) return;
+      openModal($("ocrDialog"));
+      if (file.type && file.type.indexOf("image/") !== 0) {
+        showOcrError("画像ファイルを選んでください。");
+        return;
+      }
+      beginOcr(file);
+    });
+    $("ocrClose").addEventListener("click", function () { closeModal($("ocrDialog")); });
+    bindOcrAssign($("ocrToFront"), "ocrFront");
+    bindOcrAssign($("ocrToBack"), "ocrBack");
+    $("ocrAddBtn").addEventListener("click", addCardFromOcr);
+    $("ocrToBulk").addEventListener("click", sendOcrToBulk);
+    $("ocrText").addEventListener("select", captureOcrRange);
+    $("ocrText").addEventListener("keyup", captureOcrRange);
+    $("ocrText").addEventListener("mouseup", captureOcrRange);
+    $("ocrText").addEventListener("touchend", captureOcrRange);
+    $("ocrText").addEventListener("input", function () { ocrRange = null; });
+    document.addEventListener("selectionchange", function () {
+      var ta = $("ocrText");
+      if (!ta || document.activeElement !== ta) return;
+      var a = ta.selectionStart;
+      var b = ta.selectionEnd;
+      if (a == null || b == null || a === b) {
+        clearTimeout(ocrRangeClearTimer);
+        ocrRangeClearTimer = setTimeout(function () {
+          if (document.activeElement !== ta) return;
+          if (ta.selectionStart === ta.selectionEnd) ocrRange = null;
+        }, 400);
+        return;
+      }
+      captureOcrRange();
+    });
     $("modalBackdrop").addEventListener("click", function () {
       closeModal($("editDialog"));
       closeModal($("bulkDialog"));
+      closeModal($("ocrDialog"));
     });
     $("downloadAppBtn").addEventListener("click", function () {
       try {
